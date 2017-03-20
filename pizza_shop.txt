@@ -1,0 +1,113 @@
+*** Start Project
+$ rails new pizza_shop
+$ cd pizza_shop
+
+*** Create Pizza
+$ rails g scaffold Pizza name:string crust:string sauce:string toppings:text cost:integer image:string
+
+$ rails db:migrate
+
+***
+Create a homepage for Pizza and make it a landing page
+
+## in app/controllers/pizzas…
+
+	def home
+	end
+
+## in app/views/pizzas create new file home.html.erb
+##in app/views/pizzas/home.html.erb
+
+######
+
+<div class="jumbotron">
+
+	<center>
+		<h1>Welcome to my Pizza Shack!</h1>
+
+		<img src="http://www.mysticpizza.com/admin/resources/pizza-pepperoni-w857h456.jpg">
+		<br>
+
+		<%= link_to "Check out our Pizzas!", pizzas_path, class: "btn btn-default" %>
+	</center>
+</div>
+
+#####
+
+## in config/routs around line 3
+
+	root ‘pizza#home’
+
+****** Add starter_generators to make the style look pretty
+
+## in gem file
+
+gem ‘starter_generators’
+
+$ bundle install
+$ rails g starter:style united
+(type y when it asks if you want to override)
+
+$ rails s
+ERROR MESSAGE: Showing /Users/JamesGledhill/Desktop/TTS/rails/homework/pizza_shop/app/views/layouts/application.html.erb where line #41 raised: undefined local variable or method `ar_internal_metadata_url' for #<#<Class:0x007fca8d607700>:0x007fca8d636758>
+
+## in app/views/layouts/applications
+delete line 41
+
+$ ctrl+c
+$ rails s
+
+
+***** Make Site Prettier
+
+## in app/views/pizzas/index
+
+replace all code with 
+
+####
+
+<h1>All of our Pizzas</h1>
+<div class="row">
+<% @pizzas.each do |pizza| %>
+  <div class="col-sm-6 col-md-4">
+    <div class="thumbnail">
+      <img src="<%= pizza.image %>">
+      <div class="caption">
+        <h3><%= pizza.name %></h3>
+        <h3>Cost: $<%= pizza.cost %></h3>
+        <%= link_to "More Info", pizza, class: "btn btn-default" %>
+      </div>
+    </div>
+  </div>
+  <% end %>
+</div>
+
+<br>
+
+<%= link_to 'New Pizza', new_pizza_path, class: "btn btn-primary" %>
+
+######
+
+in app/views/pizza/show
+
+replace all code with
+
+####
+
+<div class="jumbotron">
+  <center>
+    <h1><%= @pizza.name %></h1>
+    <img src="<%= @pizza.image %>">
+  </center>
+  <h3>Crust: <%= @pizza.crust %></h3>
+  <h3>Sauce: <%= @pizza.sauce %></h3>
+  <h3>Toppings: <%= @pizza.toppings %></h3>
+  <h3>Cost: $<%= @pizza.cost %></h3>
+</div>
+
+#####
+
+
+
+
+
