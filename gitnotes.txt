@@ -1,0 +1,6 @@
+$ git add .
+## adds all files in current folder - make sure you're all the way in homework as your directory
+
+$ git commit -m "whatever message you want this commit to say"
+
+$ git push origin master
