@@ -1,0 +1,2 @@
+class Java < ApplicationRecord
+end
