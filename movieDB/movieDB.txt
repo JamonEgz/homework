@@ -1,0 +1,24 @@
+$ rails new movieDB
+$ cd movieDB
+$ rails g scaffold Artists name:string type:string
+$ rails db:migrate
+
+$ rails g scaffold Movies name:string year:integer description:text artists:references
+$ rails db:migrate
+
+$ subs .
+
+***Fix associations
+in app/models
+- in /artist
+	has_many :movies
+- in /movie make the relevant line
+  belongs_to :artist, dependent: :destroy
+
+***Fix routes
+in config/routes
+  root 'artists#index'
+
+$ rails s
+
+### tried loading actor and movies but encountered a “SubclassNoFound in Artists#index error that I was unable to resolve.
