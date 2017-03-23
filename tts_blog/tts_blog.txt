@@ -1,0 +1,31 @@
+****** Add home button to document
+
+-in app/views/layouts/application just over the link_to “Edit Profile“ line
+        <%= link_to "Home", blog_posts_path, class: "btn btn-info" %>          
+
+####
+
+in app/views/blog_posts/show
+	1) 	above first div add 
+		<br>
+	
+	2) 	after - <strong><em><%= @blog_post.user.username %></em></strong>
+		add  -  <br>
+		<em><%= @blog_post.created_at %></em>
+		<br>
+
+	3) 	after - <% @blog_post.comments.each do |comment|%>
+		replace/add - 	<br><br><strong><%= comment.user.username %></strong> <em><%= comment.created_at %></em>
+			<br><%= comment.comment_entry %>
+
+
+
+### format date and time
+
+create date_time.rb file in /initializers with the following code
+
+	# Date
+	Date::DATE_FORMATS[:default] = "%m/%d/%Y" 
+
+	# Time
+	Time::DATE_FORMATS[:default] = "%m/%d/%Y %I:%M %p" 

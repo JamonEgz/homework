@@ -1,0 +1,43 @@
+<p id="notice"><%= notice %></p>
+<!-- Mail blog post -->
+<br>
+<div class="panel panel-primary">
+	<div class="panel-heading">
+	<h4>  <%= @blog_post.title %></h4>
+	</div>
+	<div class="panel-body">
+		<strong><em><%= @blog_post.user.username %></em></strong><br>
+		<em><%= @blog_post.created_at %></em>
+		<br>
+		<%= @blog_post.blog_entry %>
+	</div>
+
+</div>
+
+<!-- comment form -->
+<div class="panel panel-success">
+	<div class="panel-heading">
+		Make a Comment
+	</div>
+	<div class="panel-body">
+		<%= render 'comments/form' %>
+	</div>
+
+</div>
+
+<!-- list of comments -->
+<div class="panel panel-default">
+	<div class="panel-heading">
+	<h4>Comments</h4>
+	</div>
+	<div class="panel-body">
+		<% @blog_post.comments.each do |comment|%>
+			<br><br><strong><%= comment.user.username %></strong> <em><%= comment.created_at %></em>
+			<br><%= comment.comment_entry %>
+		<% end %>
+	</div>
+
+</div>
+
+<%= link_to 'Edit', edit_blog_post_path(@blog_post), class: "btn btn-large btn-warning" %> |
+<%= link_to 'Back', blog_posts_path, class: "btn  btn-large btn-primary" %>
