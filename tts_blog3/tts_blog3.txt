@@ -1,0 +1,555 @@
+$ rails new tts_blog3
+$ cd tts_blog3
+$ touch tts_blog3.txt
+$ open tts_blog3.txt  ## and start documenting! ##
+
+## First lets set up our scaffolds, hopefully smarter than before ##
+
+$ rails g scaffold BlogPost author:string blog_entry:text user_id:integer
+$ rails db:migrate
+
+$ rails g scaffold BlogPost author:string blog_entry:text user_id:integer blog_post_id:integer
+$ rails db:migrate
+
+$ subl .
+
+## Set up devise 
+
+- in gem file add 
+gem ‘devise’
+
+$ bundle install
+$ rails g devise:install
+$ rails g devise User username:string name:string birthday:date
+$ rails db:migrate
+
+## Create views for users ##
+
+$ rails g devise:views
+
+
+## in config/routes
+root ‘blog_posts#index’
+get 'your_posts' => 'blog_posts#your_posts'
+get 'user_page' => 'blog_posts#user_page'
+
+##
+
+## Get bootstrap going
+
+in app/views/layouts/application.html.erb replace header section
+
+#####
+
+  <head>
+
+    <title>TTS Blog</title>
+
+
+
+    <%= stylesheet_link_tag    'application', media: 'all', 'data-turbolinks-track': 'reload' %>
+
+    <%= stylesheet_link_tag  href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" %>
+
+    <%= javascript_include_tag 'application', 'data-turbolinks-track': 'reload' %>
+
+
+
+    <%= csrf_meta_tags %>
+
+    <%= javascript_include_tag href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" %>
+
+    
+
+  </head>
+
+####
+## and then to the body 
+
+
+#####
+
+ <body>
+   <%= render 'layouts/navbar' %>
+    <div class="container-fluid allstuff">
+      <%= yield %>
+    </div>
+  </body>
+
+#####
+
+## Now we’ll work on blog_posts
+
+
+in app/views/blog_posts/index.html.erb replace all code with
+
+#####
+
+<h1>Current Blog Posts</h1>
+<div class="row">
+  <% @blog_posts.each do |blog_post| %>
+    <div class="col-xs-12 col-md-6">
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <%= link_to blog_post.title, blog_post %>
+        </div>
+        
+        <div class="panel-body">
+          by <%= link_to blog_post.user.username, user_page_path(id: blog_post.user.id) %><br />
+          <span class="posted-at">posted at: <%= blog_post.created_at.strftime('%d %b %Y at %I:%M %p') %></span><br />
+          <p><%= blog_post.blog_entry[0..250] %> (<%= link_to "Read more...", blog_post %>)</p>
+        </div>
+            <% if current_user.id == blog_post.user.id %>
+          <div class="panel-footer">
+            <%= link_to 'Edit', edit_blog_post_path(blog_post), class: "btn btn-warning" %>
+            <%= link_to 'Destroy', blog_post, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>
+<br>
+
+
+
+<%= link_to 'New Blog Post', new_blog_post_path, class: "btn btn-primary" %>
+
+
+#####
+
+## Now fix the models
+
+
+in app/models/comment.rb Comment class add
+
+ 	belongs_to :blog_post
+	belongs_to :user
+
+in app/models/blog_post.rb BlogPost class add
+
+	has_many :comments
+	belongs_to :user
+
+in app/models/user.rb add
+
+  	has_many :blog_posts
+ 	has_many :comments
+
+## Now for some stylesheet work
+
+
+in app/assets/stylesheets/application.css at bottom of page add
+
+#####
+
+.cant-see-me {
+  display: none;
+}
+
+.body {
+ 	background-color: #0B4C5F;
+ }
+
+.allstuff {
+	background-color: rgba(255,255,255, 0.8);
+	margin-top: 25px;
+	margin-bottom: 25px;
+	padding-top: 10px;
+	padding-bottom: 10px;
+	border-radius: 10px;
+}
+
+#####
+
+## Comments Form work
+
+in app/view/comments/_form.html.erb replace all code with this
+
+####
+
+<%= form_for(@comment) do |f| %>
+  <% if @comment.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(comment.errors.count, "error") %> prohibited this comment from being saved:</h2>
+      <ul>
+      <% @comment.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+<form>
+    <div class="form-group">
+     <%= f.text_area :comment_entry, class: "form-control", :rows => 10, placeholder: "What do you think?" %>
+    </div>
+    <div class="form-group cant-see-me">
+      <%= f.number_field :blog_post_id, value: @blog_post.id %>
+      <%= f.number_field :user_id, value: current_user.id %>
+    </div>
+    <div class="actions">
+      <%= f.submit %>
+    </div>
+</form>
+<% end %>
+
+#####
+
+## Work on Controllers
+
+in app/controller/blog_posts
+
+- change def show to 
+
+####
+
+  def show
+    @comment = Comment.new
+  end
+
+###
+
+- and add method for your_posts
+
+####
+  def your_posts
+  end
+
+####
+
+- and for user_page
+
+#####
+
+  def user_page
+    @user = User.find(params[:id])
+    # in the link to this page we'll pass
+    # the user's ID #, then use the association
+    # to bring up their blog posts
+  end
+
+#####
+
+## Now for app/controllers/comment
+
+
+in app/controllers/comments_controller.rb make sure the create method sends the user back to the blog post instead of to the comment show page - REPLACE LINE 31
+
+#####
+        format.html { redirect_to blog_post_path(id: @comment.blog_post_id), notice: 'Comment was successfully created.' }
+#####
+
+## Now to work on Blog Post show page
+
+- in app/views/blog_posts/show.html.erg change all code to 
+
+####
+
+
+
+<p id="notice"><%= notice %></p>
+<div class="panel panel-primary">
+   <div class="panel-heading">     
+   <%= @blog_post.title %>
+   </div>
+   	<div class="panel-body">
+		by <strong><%= link_to @blog_post.user.username, user_page_path(id: @blog_post.user.id) %></strong>
+		<span class="posted-at">posted at: <%= @blog_post.created_at.strftime('%d %b %Y at %I:%M %p') %></span><br />
+		<p><%= @blog_post.blog_entry %></p>
+	</div>
+<div class="panel panel-success">
+   <div class="panel-heading">
+     Make a Comment
+   </div>
+   <div class="panel-body">
+     <%= render 'comments/form' %>
+   </div>
+</div>
+<div class="panel panel-default">
+   <div class="panel-heading">
+     <h4>Comments</h4>
+   </div>
+ 	<div class="panel-body">
+		<% @blog_post.comments.each do |comment| %>
+			<p><strong><%= link_to comment.user.username, user_page_path(id: comment.user.id) %></strong></p>
+			<p><%= comment.comment_entry %></p>
+			<p><span class="posted-at">posted at: <%= comment.created_at.strftime('%d %b %Y at %I:%M %p') %></span></p>
+		<% end %>
+	</div>
+</div>
+<div>
+	<% if current_user.id == @blog_post.user.id %>
+        <div class="panel-footer">
+          <%= link_to 'Edit', edit_blog_post_path(@blog_post), class: "btn btn-warning" %>
+          <%= link_to 'Destroy', @blog_post, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+        </div>
+    <% end %>
+</div> 
+
+####
+
+## update blog post form page
+
+- we are really just changing the input divs but in app/views/blog_posts/_form.html.erb change all code to
+
+####
+<%= form_for(blog_post) do |f| %>
+  <% if blog_post.errors.any? %>
+    <div id="error_explanation">
+      <h2><%= pluralize(blog_post.errors.count, "error") %> prohibited this blog_post from being saved:</h2>
+
+      <ul>
+      <% blog_post.errors.full_messages.each do |message| %>
+        <li><%= message %></li>
+      <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+
+<form>
+   <div class="form-group">
+      <%= f.text_field :title, class: "form-control", placeholder: "Post Title" %>
+    </div>
+    <div class="form-group">
+      <%= f.text_area :blog_entry, class: "form-control", :rows => 20, placeholder: "Speak your mind!" %>
+    </div>
+    <div class="form-group cant-see-me">
+      <%= f.number_field :user_id, value: current_user.id %>
+    </div>
+    <div class="actions">
+      <%= f.submit %>
+    </div>
+</form>
+<% end %>
+
+#####
+
+## Add login controls
+
+- in app/controllers/application_controller.rb change all code
+
+#### 
+ class ApplicationController < ActionController::Base
+  protect_from_forgery with: :exception
+  before_filter :authenticate_user!
+  protected
+  		def configure_permitted_parameters
+  		devise_parameter_sanitizer.permit(:sign_up) { |u| u.permit({roles: [] }, :email, :password, :password_confirmation, :name, :username, :birthday) }
+  		devise_parameter_sanitizer.permit(:account_update) { |u| u.permit({roles: [] }, :email, :password, :password_confirmation, :current_password, :name, :username, :birthday) }
+  		end
+	end
+end
+####
+
+
+****** Make those views have all necessary form fields and convert to Bootstrap style forms for pretty
+
+-in app/views/devise/registrations/edit.html.erb replace all code with
+
+#####
+
+
+<h2>Edit <%= resource_name.to_s.humanize %></h2>
+<%= form_for(resource, as: resource_name, url: registration_path(resource_name), html: { method: :put }) do |f| %>
+  <%= devise_error_messages! %>
+    <div class="form-group">
+    <%= f.text_field :name, autofocus: true, class:"form-control half-width", placeholder: "First & Last Name"  %> 
+  </div>
+    <div class="form-group">
+    <strong>Your Birthday: </strong><%= f.date_field :birthday, class:"form-control half-width"  %> 
+  </div>
+  <div class="form-group">
+    <%= f.text_field :username, class:"form-control half-width", placeholder: "Username"  %> 
+  </div>
+  <div class="form-group">
+    <%= f.email_field :email, class:"form-control half-width", placeholder: "Your Email"  %> 
+  </div>
+  <% if devise_mapping.confirmable? && resource.pending_reconfirmation? %>
+    <div>Currently waiting confirmation for: <%= resource.unconfirmed_email %></div>
+  <% end %>
+  <div class="form-group">
+    <%= f.label :password %><br />
+    <%= f.password_field :password, autocomplete: "off", placeholder: "Leave blank if you don't want to change it", class:"form-control half-width" %>
+  </div>
+  <div class="form-group">
+    <%= f.label :password_confirmation %><br />
+    <%= f.password_field :password_confirmation, autocomplete: "off", placeholder: "One more time please", class:"form-control half-width" %>
+  </div>
+  <div class="form-group">
+    <%= f.label :current_password %><br />
+    <%= f.password_field :current_password, autocomplete: "off", placeholder:"Type your current password to save your changes!", class:"form-control half-width" %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Update" %>
+  </div>
+<% end %>
+<h3>Cancel my account</h3>
+<p>Unhappy? <%= button_to "Cancel my account", registration_path(resource_name), data: { confirm: "Are you sure?" }, method: :delete %></p>
+<%= link_to "Back", :back %>
+
+####
+
+--in app/views/devise/registrations/new.html.erb replace all code with
+
+####
+
+<h2>Sign up</h2>
+<%= form_for(resource, as: resource_name, url: registration_path(resource_name)) do |f| %>
+  <%= devise_error_messages! %>
+     <div class="form-group">
+    <%= f.text_field :name, autofocus: true, class:"form-control", placeholder: "First & Last Name"  %> 
+  </div>
+    <div class="form-group">
+    <strong>Your Birthday: </strong><%= f.date_field :birthday, class:"form-control"  %> 
+  </div>
+  <div class="form-group">
+    <%= f.text_field :username, class:"form-control", placeholder: "Username"  %> 
+  </div>
+  <div class="form-group">
+    <%= f.email_field :email, class:"form-control", placeholder: "Your Email"  %> 
+  </div>
+  <div class="form-group">
+    <%= f.label :password %>
+    <% if @minimum_password_length %>
+    <em>(<%= @minimum_password_length %> characters minimum)</em>
+    <% end %><br />
+    <%= f.password_field :password, autocomplete: "off", class:"form-control" %>
+  </div>
+  <div class="form-group">
+    <%= f.label :password_confirmation %><br />
+    <%= f.password_field :password_confirmation, autocomplete: "off", class:"form-control" %>
+  </div>
+  <div class="actions">
+    <%= f.submit "Sign up" %>
+  </div>
+<% end %>
+<%= render "devise/shared/links" %>
+
+#####
+
+****** Create navbar
+- in app/views/layouts create a new partial page named _navbar.html.erb
+- use following code
+
+####
+
+
+<% if user_signed_in? %>
+	<nav class="navbar navbar-default">
+	  <div class="container-fluid">
+	    <!-- Brand and toggle get grouped for better mobile display -->
+	    <div class="navbar-header">
+	      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+	        <span class="sr-only">Toggle navigation</span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	      </button>
+	      <%= link_to "All Posts", root_path, class: "navbar-brand" %>
+	    </div>
+	    <!-- Collect the nav links, forms, and other content for toggling -->
+	   
+	    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+	      <ul class="nav navbar-nav navbar-left">
+	      	<li><%= link_to "Your Posts", your_posts_path %></li>
+	      	<li><%= link_to "Make a New Post", new_blog_post_path %></li>
+	    	</ul>
+	      <ul class="nav navbar-nav navbar-right">
+	        <li><%= link_to "Edit Account", edit_user_registration_path %></li>
+	        <li><%= link_to "Sign Out", destroy_user_session_path, method: :delete %></li>
+	      </ul>
+	    </div><!-- /.navbar-collapse -->
+	  </div><!-- /.container-fluid -->
+	</nav>
+
+<% else %>
+	<nav class="navbar navbar-default">
+	  <div class="container-fluid">
+	    <!-- Brand and toggle get grouped for better mobile display -->
+	    <div class="navbar-header">
+	      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+	        <span class="sr-only">Toggle navigation</span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	        <span class="icon-bar"></span>
+	      </button>
+	      <%= link_to "Sign Up", new_registration_path(resource_name), class: "navbar-brand" %>
+	    </div>
+	    <!-- Collect the nav links, forms, and other content for toggling -->
+	  </div><!-- /.container-fluid -->
+	</nav>
+<% end %>
+
+####
+
+*** Create the your_posts page 
+
+-in app/views/blog_posts create a new page your_posts.html.erb
+
+— add HTML to your_posts
+
+#####
+
+<% current_user.blog_posts.each do |blog_post| %>
+	<div class="col-xs-12">
+		<div class="panel panel-success">
+			<div class="panel-heading">
+				<h4><%= link_to blog_post.title, blog_post %></h4>
+			</div>
+	        <div class="panel-body">
+	          by <%= blog_post.user.username %><br />
+	          <span class="posted-at">posted at: <%= blog_post.created_at.strftime('%d %b %Y at %I:%M %p') %></span><br />
+	          <p><%= blog_post.blog_entry[0..250] %> (<%= link_to "Read more...", blog_post %>)</p>
+	        </div>
+	        <div class="panel-footer">
+	          <%= link_to 'Edit', edit_blog_post_path(blog_post), class: "btn btn-warning" %>
+	          <%= link_to 'Destroy', blog_post, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+	        </div>
+		</div>
+	</div>
+<% end %>
+
+#####
+
+*** Add a Users Page 
+
+- in app/views/blog_posts create user_posts.html.erb page
+
+- add this code to the new page
+
+####
+<h1><%= @user.username %>'s Page</h1>
+<p><strong>Name:</strong> <%= @user.name  %></p>
+<p><strong>Birthday:</strong> <%= @user.birthday.strftime('%B %d, %Y')  %></p>
+<div class="row">
+	<% @user.blog_posts.each do |blog_post| %>
+		<div class="col-xs-12">
+			<div class="panel panel-success">
+				<div class="panel-heading">
+					<h4><%= link_to blog_post.title, blog_post %></h4>
+				</div>
+		        <div class="panel-body">
+		          by <%= blog_post.user.username %><br />
+		          <span class="posted-at">posted at: <%= blog_post.created_at.strftime('%d %b %Y at %I:%M %p') %></span><br />
+		          <p><%= blog_post.blog_entry[0..250] %> (<%= link_to "Read more...", blog_post %>)</p>
+		        </div>
+		        <% if current_user.id == blog_post.user.id %>
+     				 <div class="panel-footer">
+       			      <%= link_to 'Edit', edit_blog_post_path(blog_post), class: "btn btn-warning" %>
+       			      <%= link_to 'Destroy', blog_post, method: :delete, data: { confirm: 'Are you sure?' }, class: "btn btn-danger" %>
+	   				</div>
+				<% end %>
+			</div>
+		</div>
+	<% end %>
+</div>
+
+####
+
+
+
+
+
+
